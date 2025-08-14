@@ -13,6 +13,9 @@ if not api_url or not threadId:
     print("Ошибка: Не удалось получить значения URL или threadId из переменных окружения.")
     exit(1)
 
+# Путь к сертификату CA в текущей директории
+ca_cert_path = os.path.join(os.getcwd(), 'ca.crt')
+
 def send_telegram_alert(message):
     data = {
         "threadId": threadId,
@@ -22,7 +25,8 @@ def send_telegram_alert(message):
 
     # Отправляем запрос
     try:
-        response = requests.post(api_url, json=data)
+        verify_param = ca_cert_path if os.path.exists(ca_cert_path) else True
+        response = requests.post(api_url, json=data, verify=verify_param)
         return response
     except requests.exceptions.RequestException as e:
         print(f"Ошибка: {e}")
