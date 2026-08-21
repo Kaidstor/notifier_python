@@ -1,4 +1,5 @@
 import os
+import socket
 import requests
 from env_loader import load_environment_variables
 
@@ -7,10 +8,13 @@ load_environment_variables()
 
 # Получение значения URL
 api_url = os.getenv('API_URL')
-threadId = os.getenv('THREAD_ID')
+# Пустой THREAD_ID — сообщение уходит в основной чат группы алертов,
+# а не в топик; тогда в текст добавляется префикс [сервер]
+threadId = (os.getenv('THREAD_ID') or '').strip() or None
+serverName = (os.getenv('SERVER_NAME') or '').strip() or socket.gethostname()
 
-if not api_url or not threadId:
-    print("Ошибка: Не удалось получить значения URL или threadId из переменных окружения.")
+if not api_url:
+    print("Ошибка: Не удалось получить значение API_URL из переменных окружения.")
     exit(1)
 
 # Путь к сертификату CA в текущей директории
@@ -18,10 +22,11 @@ ca_cert_path = os.path.join(os.getcwd(), 'ca.crt')
 
 def send_telegram_alert(message):
     data = {
-        "threadId": threadId,
         "type": "warning",
-        "text": message
+        "text": message if threadId else f"[{serverName}] {message}"
     }
+    if threadId:
+        data["threadId"] = threadId
 
     # Отправляем запрос
     try:
@@ -30,4 +35,3 @@ def send_telegram_alert(message):
         return response
     except requests.exceptions.RequestException as e:
         print(f"Ошибка: {e}")
-        
